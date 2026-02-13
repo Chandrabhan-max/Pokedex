@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
 import type { Pokemon } from '../types/pokemon';
 import { getPokemonById } from '../api/pokemon.api';
 
-const typeBackground: Record<string, string> = {
+const TYPE_GRADIENTS: Record<string, string> = {
   grass: "from-green-400 via-emerald-500 to-green-600",
   water: "from-blue-400 via-cyan-500 to-blue-600",
   fire: "from-red-400 via-orange-500 to-red-600",
@@ -28,136 +28,150 @@ const typeBackground: Record<string, string> = {
 
 function PokemonDetail() {
   const { id } = useParams();
+  const location = useLocation();
   const [pokemon, setPokemon] = useState<Pokemon | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (id) fetchPokemon(Number(id));
+    if (!id) return;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const { data } = await getPokemonById(Number(id));
+        setPokemon(data);
+      } catch (error) {
+        console.error("Error fetching pokemon details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [id]);
 
-  const fetchPokemon = async (pokemonId: number) => {
-    const res = await getPokemonById(pokemonId);
-    setPokemon(res.data);
-  };
+  const { bgGradient, height, weight } = useMemo(() => {
+    if (!pokemon) return { bgGradient: "", height: "0", weight: "0" };
 
-  if (!pokemon) return null;
+    const primaryType = pokemon.types[0];
+    return {
+      bgGradient: TYPE_GRADIENTS[primaryType] || "from-indigo-400 via-purple-500 to-indigo-600",
+      height: (pokemon.height / 10).toFixed(1),
+      weight: (pokemon.weight / 10).toFixed(1)
+    };
+  }, [pokemon]);
 
-  const primaryType = pokemon.types[0];
-  const bgGradient =
-    typeBackground[primaryType] ||
-    "from-indigo-400 via-purple-500 to-indigo-600";
-
-  const height = (pokemon.height / 10).toFixed(1);
-  const weight = (pokemon.weight / 10).toFixed(1);
+  if (isLoading || !pokemon) return null;
 
   return (
-    <div
-      className={`min-h-screen bg-gradient-to-br ${bgGradient} p-10 transition-all duration-500`}
-    >
-      <Link
-        to="/"
-        className="text-white font-semibold opacity-90 hover:opacity-100"
-      >
-        ← Back
-      </Link>
+    <div className="relative min-h-screen p-10 overflow-hidden">
+      <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} bg-[length:200%_200%] animate-gradient`} />
+      
+      <div className="absolute inset-0 bg-black/0 dark:bg-black/50 transition-all duration-500" />
 
-      <motion.div
-        initial={{ scale: 0.96, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="max-w-4xl mx-auto mt-10 rounded-3xl p-12 shadow-2xl border border-white/30"
-        style={{
-          background:
-            "rgba(0,0,0,0.25)",  // darker glass effect
-          backdropFilter: "blur(20px)"
-        }}
-      >
-        <div className="flex flex-col items-center text-white">
+      <div className="relative z-10">
+        <Link
+          to={`/${location.search}`}
+          className="inline-block mb-6 px-6 py-2 rounded-xl bg-black text-white dark:bg-white dark:text-black shadow-lg hover:scale-105 transition-all duration-300"
+        >
+          ← Back
+        </Link>
 
-          <h1 className="text-4xl font-bold capitalize mb-6 tracking-wide">
-            {pokemon.name}
-          </h1>
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="max-w-4xl mx-auto mt-10 rounded-3xl p-12 shadow-2xl border border-white/30 dark:border-gray-700 bg-white/20 dark:bg-gray-900/70 backdrop-blur-2xl transition-all duration-500"
+        >
+          <div className="flex flex-col items-center text-white dark:text-gray-100">
+            
+            <h1 className="text-4xl font-bold capitalize mb-8 tracking-wide">
+              {pokemon.name}
+            </h1>
 
-          <img
-            src={pokemon.image}
-            alt={pokemon.name}
-            className="w-44 h-44 mb-10 drop-shadow-2xl"
-          />
-
-          {/* INFO SECTION */}
-          <div className="grid md:grid-cols-2 gap-14 w-full">
-
-            {/* Physical Info */}
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold">
-                Physical Info
-              </h3>
-
-              <div className="flex justify-between border-b border-white/30 pb-2">
-                <span className="opacity-80">Height</span>
-                <span className="font-semibold">{height} m</span>
-              </div>
-
-              <div className="flex justify-between border-b border-white/30 pb-2">
-                <span className="opacity-80">Weight</span>
-                <span className="font-semibold">{weight} kg</span>
-              </div>
+            <div className="relative mb-12">
+              <div className="absolute inset-0 blur-3xl opacity-30 bg-white dark:bg-indigo-500 rounded-full" />
+              <img
+                src={pokemon.image}
+                alt={pokemon.name}
+                className="relative w-64 h-64 object-contain drop-shadow-2xl"
+              />
             </div>
 
-            {/* Abilities */}
-            <div>
-              <h3 className="text-xl font-semibold mb-6">
-                Abilities
-              </h3>
-
-              <div className="flex flex-wrap gap-3">
-                {pokemon.abilities.map(a => (
-                  <span
-                    key={a}
-                    className="px-4 py-2 rounded-full bg-white/20 border border-white/30 text-sm capitalize"
-                  >
-                    {a}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-          {/* STATS */}
-          <div className="mt-14 w-full">
-            <h3 className="text-xl font-semibold mb-6">
-              Battle Stats
-            </h3>
-
-            {pokemon.stats.map(stat => {
-              const percentage = Math.min(stat.value, 150) / 150 * 100;
-
-              return (
-                <div key={stat.name} className="mb-6">
-                  <div className="flex justify-between mb-1">
-                    <span className="capitalize opacity-80">
-                      {stat.name}
-                    </span>
-                    <span className="font-semibold">
-                      <CountUp end={stat.value} duration={1.2} />
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-white/20 h-3 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ duration: 1 }}
-                      className="bg-white h-3 rounded-full"
-                    />
-                  </div>
+            <div className="grid md:grid-cols-2 gap-14 w-full">
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold">Physical Info</h3>
+                
+                <div className="flex justify-between border-b border-white/30 dark:border-gray-600 pb-2">
+                  <span className="opacity-80">Height</span>
+                  <span className="font-semibold">{height} m</span>
                 </div>
-              );
-            })}
-          </div>
 
-        </div>
-      </motion.div>
+                <div className="flex justify-between border-b border-white/30 dark:border-gray-600 pb-2">
+                  <span className="opacity-80">Weight</span>
+                  <span className="font-semibold">{weight} kg</span>
+                </div>
+              </div>
+
+              {/* Ability Tags */}
+              <div>
+                <h3 className="text-xl font-semibold mb-6">Abilities</h3>
+                <div className="flex flex-wrap gap-3">
+                  {pokemon.abilities.map(ability => (
+                    <span
+                      key={ability}
+                      className="px-4 py-2 rounded-full text-sm capitalize bg-white/30 dark:bg-gray-800 border border-white/40 dark:border-gray-600"
+                    >
+                      {ability}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-14 w-full">
+              <h3 className="text-xl font-semibold mb-6">Battle Stats</h3>
+
+              {pokemon.stats.map(stat => {
+                const barWidth = Math.min(stat.value, 150) / 150 * 100;
+
+                return (
+                  <div key={stat.name} className="mb-6">
+                    <div className="flex justify-between mb-2">
+                      <span className="capitalize opacity-80">{stat.name}</span>
+                      <span className="font-semibold">
+                        <CountUp end={stat.value} duration={1.2} />
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-gray-800/60 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${barWidth}%` }}
+                        transition={{ duration: 1 }}
+                        className="h-4 rounded-full bg-white dark:bg-indigo-400"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <style>
+        {`
+          @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .animate-gradient {
+            animation: gradientMove 8s ease infinite;
+          }
+        `}
+      </style>
     </div>
   );
 }

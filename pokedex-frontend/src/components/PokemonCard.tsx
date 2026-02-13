@@ -1,12 +1,12 @@
-import { Link } from 'react-router-dom';
-import type { Pokemon } from '../types/pokemon';
+import { Link, useLocation } from 'react-router-dom';
 import Tilt from 'react-parallax-tilt';
+import type { Pokemon } from '../types/pokemon';
 
-interface Props {
+interface PokemonCardProps {
   pokemon: Pokemon;
 }
 
-const typeColorMap: Record<string, string> = {
+const TYPE_COLORS: Record<string, string> = {
   fire: "from-red-400 to-orange-500",
   water: "from-blue-400 to-cyan-500",
   grass: "from-green-400 to-emerald-500",
@@ -27,57 +27,58 @@ const typeColorMap: Record<string, string> = {
   normal: "from-gray-400 to-gray-500",
 };
 
-function PokemonCard({ pokemon }: Props) {
-  const primaryType = pokemon.types[0];
-  const gradient = typeColorMap[primaryType] || "from-indigo-400 to-purple-500";
+function PokemonCard({ pokemon }: PokemonCardProps) {
+  const location = useLocation();
+  const { id, name, image, types } = pokemon;
+
+  const gradientClass = TYPE_COLORS[types[0]] || "from-indigo-400 to-purple-500";
 
   return (
-    <Tilt scale={1.05} glareEnable glareMaxOpacity={0.2}>
+    <Tilt 
+      scale={1.05} 
+      glareEnable={false}
+      perspective={1000}
+      className="h-full"
+      style={{ transformStyle: 'preserve-3d' }}
+    >
       <Link
-        to={`/pokemon/${pokemon.id}`}
-        className="group relative flex flex-col justify-between h-64 rounded-3xl p-6 shadow-xl border border-white/30 overflow-hidden"
+        to={`/pokemon/${id}${location.search}`}
+        style={{ clipPath: 'inset(0 round 2rem)' }} 
+        className="group relative flex flex-col justify-between h-72 p-6 transition-all duration-300 border-none outline-none focus:ring-0 focus:outline-none ring-0 shadow-none"
       >
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-100 transition-opacity`} />
+        
+        <div className="absolute inset-0 bg-black/20" />
 
-        {/* Background Gradient Layer */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-80`} />
-
-        {/* Glass Overlay */}
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-lg" />
-
-        {/* Content */}
         <div className="relative z-10 flex flex-col h-full">
-
-          {/* ID */}
-          <span className="text-white/80 text-sm font-semibold">
-            #{pokemon.id}
+          <span className="text-white/70 text-[10px] font-black tracking-widest uppercase">
+            #{String(id).padStart(3, '0')}
           </span>
 
-          {/* Image */}
-          <div className="flex justify-center mt-4">
+          <div className="flex-1 flex items-center justify-center">
             <img
-              src={pokemon.image}
-              alt={pokemon.name}
-              className="w-24 h-24 object-contain transition-transform duration-300 group-hover:scale-110"
+              src={image}
+              alt={name}
+              className="w-32 h-32 object-contain drop-shadow-[0_20px_20px_rgba(0,0,0,0.4)] transition-transform duration-500 group-hover:scale-110"
             />
           </div>
 
-          {/* Name */}
-          <h3 className="mt-4 text-center text-xl font-bold text-white capitalize tracking-wide">
-            {pokemon.name}
-          </h3>
+          <div className="mt-2">
+            <h3 className="text-center text-xl font-black text-white capitalize italic tracking-tight">
+              {name}
+            </h3>
 
-          {/* Types */}
-          <div className="flex justify-center gap-2 mt-3 flex-wrap">
-            {pokemon.types.map(type => (
-              <span
-                key={type}
-                className="px-3 py-1 text-xs bg-black/30 text-white rounded-full capitalize"
-              >
-                {type}
-              </span>
-            ))}
+            <div className="flex justify-center gap-1.5 mt-3">
+              {types.map(type => (
+                <span
+                  key={type}
+                  className="px-3 py-0.5 text-[10px] font-bold bg-black/40 text-white rounded-lg capitalize border border-white/10"
+                >
+                  {type}
+                </span>
+              ))}
+            </div>
           </div>
-
         </div>
       </Link>
     </Tilt>

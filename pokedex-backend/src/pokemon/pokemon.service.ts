@@ -41,7 +41,9 @@ export class PokemonService {
         return {
           id: data.id,
           name: data.name,
-          image: data.sprites.front_default,
+          image:
+          data.sprites.other['official-artwork'].front_default ||
+          data.sprites.front_default,
           height: data.height,
           weight: data.weight,
           types: data.types.map(t => t.type.name),
@@ -71,14 +73,14 @@ export class PokemonService {
   ) {
     let allPokemon = await this.getPokemonList();
 
-    // 🔍 Search by name
+    // Search by name
     if (search) {
       allPokemon = allPokemon.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
-    // 🔥 Filter by type
+    // Filter by type
     if (type) {
       allPokemon = allPokemon.filter(p =>
         p.types.includes(type.toLowerCase()),
