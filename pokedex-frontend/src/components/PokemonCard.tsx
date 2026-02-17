@@ -51,9 +51,11 @@ function PokemonCard({ pokemon }: PokemonCardProps) {
         <div className="absolute inset-0 bg-black/20" />
 
         <div className="relative z-10 flex flex-col h-full">
-          <span className="text-white/70 text-[10px] font-black tracking-widest uppercase">
-            #{String(id).padStart(3, '0')}
-          </span>
+          <div className="flex justify-between items-start">
+            <span className="text-white/90 text-[10px] font-black tracking-widest uppercase bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm">
+              #{String(id).padStart(3, '0')}
+            </span>
+          </div>
 
           <div className="flex-1 flex items-center justify-center">
             <img

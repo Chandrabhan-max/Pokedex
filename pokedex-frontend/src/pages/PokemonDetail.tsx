@@ -50,14 +50,18 @@ function PokemonDetail() {
     loadData();
   }, [id]);
 
-  const { bgGradient, height, weight } = useMemo(() => {
-    if (!pokemon) return { bgGradient: "", height: "0", weight: "0" };
+  const { bgGradient, height, weight, prevId, nextId } = useMemo(() => {
+    if (!pokemon) return { bgGradient: "", height: "0", weight: "0", prevId: 0, nextId: 0 };
 
     const primaryType = pokemon.types[0];
+    const currentId = Number(pokemon.id);
+    
     return {
       bgGradient: TYPE_GRADIENTS[primaryType] || "from-indigo-400 via-purple-500 to-indigo-600",
       height: (pokemon.height / 10).toFixed(1),
-      weight: (pokemon.weight / 10).toFixed(1)
+      weight: (pokemon.weight / 10).toFixed(1),
+      prevId: currentId > 1 ? currentId - 1 : 1025, // Loop to end if at start
+      nextId: currentId < 1025 ? currentId + 1 : 1 // Loop to start if at end
     };
   }, [pokemon]);
 
@@ -69,38 +73,62 @@ function PokemonDetail() {
       
       <div className="absolute inset-0 bg-black/0 dark:bg-black/50 transition-all duration-500" />
 
+      <Link
+        to={`/pokemon/${prevId}${location.search}`}
+        className="fixed left-4 top-1/2 -translate-y-1/2 z-50 p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md text-white transition-all hover:scale-110 shadow-2xl group"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+        </svg>
+      </Link>
+
+      <Link
+        to={`/pokemon/${nextId}${location.search}`}
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-50 p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md text-white transition-all hover:scale-110 shadow-2xl group"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+
       <div className="relative z-10">
         <Link
           to={`/${location.search}`}
-          className="inline-block mb-6 px-6 py-2 rounded-xl bg-black text-white dark:bg-white dark:text-black shadow-lg hover:scale-105 transition-all duration-300"
+          className="inline-block mb-6 px-6 py-2 rounded-xl bg-white text-black dark:bg-black dark:text-white shadow-lg hover:scale-105 transition-all duration-300 font-bold"
         >
           ← Back
         </Link>
 
         <motion.div
-          initial={{ scale: 0.96, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          key={pokemon.id}
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.4 }}
           className="max-w-4xl mx-auto mt-10 rounded-3xl p-12 shadow-2xl border border-white/30 dark:border-gray-700 bg-white/20 dark:bg-gray-900/70 backdrop-blur-2xl transition-all duration-500"
         >
           <div className="flex flex-col items-center text-white dark:text-gray-100">
             
-            <h1 className="text-4xl font-bold capitalize mb-8 tracking-wide">
-              {pokemon.name}
-            </h1>
+            <div className="flex flex-col items-center mb-8">
+              <span className="text-white/60 text-lg font-black tracking-widest mb-2">
+                #{String(pokemon.id).padStart(3, '0')}
+              </span>
+              <h1 className="text-5xl font-black capitalize tracking-wide italic">
+                {pokemon.name}
+              </h1>
+            </div>
 
             <div className="relative mb-12">
               <div className="absolute inset-0 blur-3xl opacity-30 bg-white dark:bg-indigo-500 rounded-full" />
               <img
                 src={pokemon.image}
                 alt={pokemon.name}
-                className="relative w-64 h-64 object-contain drop-shadow-2xl"
+                className="relative w-64 h-64 object-contain drop-shadow-2xl transition-transform duration-700 hover:scale-110"
               />
             </div>
 
             <div className="grid md:grid-cols-2 gap-14 w-full">
               <div className="space-y-6">
-                <h3 className="text-xl font-semibold">Physical Info</h3>
+                <h3 className="text-xl font-semibold border-l-4 border-white/40 pl-4">Physical Info</h3>
                 
                 <div className="flex justify-between border-b border-white/30 dark:border-gray-600 pb-2">
                   <span className="opacity-80">Height</span>
@@ -113,14 +141,13 @@ function PokemonDetail() {
                 </div>
               </div>
 
-              {/* Ability Tags */}
               <div>
-                <h3 className="text-xl font-semibold mb-6">Abilities</h3>
+                <h3 className="text-xl font-semibold mb-6 border-l-4 border-white/40 pl-4">Abilities</h3>
                 <div className="flex flex-wrap gap-3">
                   {pokemon.abilities.map(ability => (
                     <span
                       key={ability}
-                      className="px-4 py-2 rounded-full text-sm capitalize bg-white/30 dark:bg-gray-800 border border-white/40 dark:border-gray-600"
+                      className="px-4 py-2 rounded-full text-sm font-bold capitalize bg-white/10 dark:bg-black/20 border border-white/20 dark:border-gray-600 backdrop-blur-md shadow-sm"
                     >
                       {ability}
                     </span>
@@ -130,26 +157,26 @@ function PokemonDetail() {
             </div>
 
             <div className="mt-14 w-full">
-              <h3 className="text-xl font-semibold mb-6">Battle Stats</h3>
+              <h3 className="text-xl font-semibold mb-6 border-l-4 border-white/40 pl-4">Battle Stats</h3>
 
               {pokemon.stats.map(stat => {
                 const barWidth = Math.min(stat.value, 150) / 150 * 100;
 
                 return (
                   <div key={stat.name} className="mb-6">
-                    <div className="flex justify-between mb-2">
-                      <span className="capitalize opacity-80">{stat.name}</span>
-                      <span className="font-semibold">
-                        <CountUp end={stat.value} duration={1.2} />
+                    <div className="flex justify-between mb-2 px-1">
+                      <span className="capitalize opacity-80 font-medium">{stat.name}</span>
+                      <span className="font-bold">
+                        <CountUp end={stat.value} duration={1.2} redraw={true} />
                       </span>
                     </div>
 
-                    <div className="w-full bg-gray-800/60 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
+                    <div className="w-full bg-black/20 dark:bg-gray-800/60 h-4 rounded-full overflow-hidden border border-white/10">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${barWidth}%` }}
-                        transition={{ duration: 1 }}
-                        className="h-4 rounded-full bg-white dark:bg-indigo-400"
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="h-4 rounded-full bg-white dark:bg-indigo-400 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
                       />
                     </div>
                   </div>

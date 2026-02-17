@@ -1,9 +1,14 @@
 html {
-  font-size: 85%;
+  font-size: 80%;
 }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes scan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(340px); opacity: 0; }
+}
 
 @layer base {
   :root {
